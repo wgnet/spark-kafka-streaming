@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.wargaming.dwh</groupId>
+    <version>0.1-cdh5.1.0</version>
+    <artifactId>spark-kafka-streaming</artifactId>
+    <packaging>jar</packaging>
+
+
+    <properties>
+        <scala-version>2.10.3</scala-version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <tar.name>${project.build.finalName}.tar.gz</tar.name>
+        <maven.build.timestamp.format>
+            yyyy-MM-dd'T'HH:mm
+        </maven.build.timestamp.format>
+        <buildDate>${maven.build.timestamp}</buildDate>
+        <compileSource>1.7</compileSource>
+
+        <!-- Plugin Dependencies -->
+        <maven.assembly.version>2.4</maven.assembly.version>
+        <maven.antrun.version>1.6</maven.antrun.version>
+        <jamon.plugin.version>2.3.4</jamon.plugin.version>
+        <maven.site.version>3.3</maven.site.version>
+        <javadoc.version>2.9</javadoc.version>
+        <maven.resources.plugin.version>2.6</maven.resources.plugin.version>
+        <!-- General Packaging -->
+        <final.name>${project.artifactId}-${project.version}</final.name>
+        <metrics.version>3.0.2</metrics.version>
+        <spark.version>1.0.2</spark.version>
+        <hadoop.client.version>2.3.0-cdh5.1.0</hadoop.client.version>
+        <hbase.client.version>0.98.4-hadoop2</hbase.client.version>
+    </properties>
+
+    <repositories>
+        <repository>
+            <id>Akka Repository</id>
+            <name>Akka Repository</name>
+            <url>http://repo.akka.io/releases/</url>
+        </repository>
+        <repository>
+            <id>Spray Repository</id>
+            <name>Spray Repository</name>
+            <url>http://repo.spray.cc/</url>
+        </repository>
+        <repository>
+            <id>cloudera</id>
+            <name>cloudera</name>
+            <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
+        </repository>
+        <repository>
+            <id>scala-tools.org</id>
+            <name>Scala-tools Maven2 Repository</name>
+            <url>http://scala-tools.org/repo-releases</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-core_2.10</artifactId>
+            <version>${spark.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-streaming_2.10</artifactId>
+            <version>${spark.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka_2.10</artifactId>
+            <version>0.8.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro</artifactId>
+            <version>1.7.6</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-client</artifactId>
+            <version>${hadoop.client.version}</version>
+            <!--scope>provided</scope-->
+            <exclusions>
+                <exclusion>
+                    <groupId>org.jboss.netty</groupId>
+                    <artifactId>netty</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-client</artifactId>
+            <version>${hbase.client.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>asm</groupId>
+                    <artifactId>asm</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.jboss.netty</groupId>
+                    <artifactId>netty</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.codahale.metrics</groupId>
+            <artifactId>metrics-core</artifactId>
+            <version>${metrics.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.scala-tools</groupId>
+                <artifactId>maven-scala-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>scala-compile-first</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>scala-test-compile</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <scalaVersion>${scala-version}</scalaVersion>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.1</version>
+                <configuration>
+                    <source>1.7</source>
+                    <target>1.7</target>
+                </configuration>
+            </plugin>
+
+        </plugins>
+    </build>
+
+
+</project>
