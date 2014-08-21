@@ -65,7 +65,7 @@ class PartitionedSimpleConsumerKafkaReceiver(config: KafkaStreamConsumerConfig,
       try {
         findTopicPartitions()
       } catch {
-        case t: Throwable => log.info("exception during geoip file checker timer task %1$s".format(t), t)
+        case t: Throwable => log.info("exception while 'find partitions' timer task %1$s".format(t), t)
       }
     }
   }
