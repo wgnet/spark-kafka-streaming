@@ -37,8 +37,9 @@ case class KafkaStreamConsumerConfig(var consumerId: Int,
                                      var zkHbaseQuorum: String,
                                      var offsetsTable: String,
                                      var cleanOffsets: Boolean,
-                                     var devMode: Boolean = false) extends Serializable {
-  def this() = this(-1, -1, 0, "", "", mutable.Seq[String](), 100000, 1024 * 1024, StorageLevel.MEMORY_AND_DISK_SER_2, "", "", false, false)
+                                     var devMode: Boolean = false,
+                                     var startFromLatestKafkaOffset: Boolean = false) extends Serializable {
+  def this() = this(-1, -1, 0, "", "", mutable.Seq[String](), 100000, 1024 * 1024, StorageLevel.MEMORY_AND_DISK_SER_2, "", "", false, false, false)
 }
 
 /**
@@ -149,8 +150,34 @@ class PartitionedSimpleConsumerKafkaReceiver(config: KafkaStreamConsumerConfig,
 
   }
 
-  def readOffset(tp: (String, Int)): Long = {
+  def readLatestKafkaOffset(tp: (String, Int), consumer: ConsumerData): Long = {
     var result = 0l
+    //read last from kafka
+    try {
+
+
+      KafkaUtils.findLeadersForPartitionFromZk(config.kafkaZkQuorum, tp._1, Seq(tp._2)).get(tp._2).foreach {
+        pl =>
+          val newOffsetData = KafkaUtils.findOffsetsForPartition(Map(tp._2 -> pl), tp._1, config.clientId)
+          newOffsetData.get(tp._2).foreach {
+            seq => result = seq.max
+          }
+          log.info("latest kafka offset for %1$s = %2$s".format(tp._1, result))
+      }
+
+    } catch {
+      case e: Exception => {
+        log.error("" + e, e)
+      }
+    }
+
+    result
+  }
+
+
+  def readHbaseOffset(tp: (String, Int)): Long = {
+    var result = 0l
+    //read from hbase
     try {
       val table = getHbaseTable(Thread.currentThread().getName)
       val rk = Bytes.toBytes("[%3$s]-%1$s-%2$s".format(tp._1, tp._2, config.clientId))
@@ -178,7 +205,9 @@ class PartitionedSimpleConsumerKafkaReceiver(config: KafkaStreamConsumerConfig,
           if (!tpData.contains(x)) {
             val consumer = new ConsumerData(0, ErrorMapping.NotLeaderForPartitionCode, None, None)
             if (!config.cleanOffsets) {
-              consumer.offset = readOffset(x)
+              consumer.offset = readHbaseOffset(x)
+            } else if (config.startFromLatestKafkaOffset) {
+              consumer.offset = readLatestKafkaOffset(x, consumer)
             }
             tpData += (x -> consumer)
 
@@ -326,9 +355,9 @@ class PartitionedSimpleConsumerKafkaReceiver(config: KafkaStreamConsumerConfig,
       getLeader(tp, consumerId)._1.map {
         sc =>
           val newOffsetData = KafkaUtils.findOffsetsForPartitionWithConnection(sc, tp._1._1, tp._1._2, config.clientId)
-          val newOffset = newOffsetData._2.map {
-            seq => seq.find(x => x > currentOffset).getOrElse(tp._2.offset)
-          } getOrElse (tp._2.offset)
+          val newOffset = newOffsetData._2.flatMap {
+            seq => seq.find(x => x > currentOffset)
+          } getOrElse (0l)
           log.info("new offset for %1$s = %2$s".format(tp._1, newOffset))
           tp._2.offset = newOffset
           tp._2.status = newOffsetData._1
